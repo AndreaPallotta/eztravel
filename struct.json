@@ -1,0 +1,27 @@
+{
+  "frontend": {
+    "app.py": null,
+    "conda-lock.txt": null,
+    "environment.yml": null
+  },
+  "backend": {
+    "server.js": null,
+    ".env": null,
+    "routes": {},
+    "utils": {
+      "init_db.sql": null
+    },
+    "logs": {}
+  },
+  "config": {
+    ".gitkeep": null
+  },
+  "data": {
+    "cache.sqlite": null
+  },
+  "ml": {
+    ".gitkeep": null
+  },
+  "README.md": null
+}
+

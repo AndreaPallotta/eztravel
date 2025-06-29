@@ -1,0 +1,44 @@
+# Node modules
+/backend/node_modules/
+
+# Python environment
+/frontend/__pycache__/
+/frontend/.python-version
+/frontend/.streamlit/
+
+# Conda and lock files
+/frontend/conda-lock.yml
+/frontend/conda-meta/
+
+# SQLite DBs and logs
+/data/*.sqlite
+*.sqlite
+*.db
+logs/
+*.log
+
+# Environment & config
+.env
+.env.*
+/config/*.local.*
+
+# Editor junk
+.DS_Store
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# Compiled output
+*.pyc
+*.pyo
+*.pyd
+*.pkl
+__pycache__/
+
+# Ollama models
+/ml/models
+/ml/.ollama
+
+# Gitignore generator helpers
+struct
