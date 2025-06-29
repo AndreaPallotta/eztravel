@@ -6,6 +6,8 @@ const cors = require('cors');
 const { logMiddleware } = require('./utils/logger');
 const { printResMid } = require('./utils/middleware');
 
+const metaRoutes = require('./routes/meta');
+
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -15,5 +17,7 @@ app.use(helmet());
 app.use(cors());
 app.use(logMiddleware);
 app.use(printResMid);
+
+app.use('/meta', metaRoutes);
 
 module.exports = app;

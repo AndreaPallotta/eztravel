@@ -33,10 +33,10 @@ npm install --save-dev nodemon
 
 echo "🛠️ Adding nodemon dev script to package.json..."
 if command -v npx &> /dev/null; then
-  npx json -I -f package.json -e 'this.scripts.dev="nodemon server.js"'
+  npx json -I -f package.json -e 'this.scripts.dev="nodemon --quiet server.js"'
 else
   echo "⚠️ 'npx' not found. Using sed to add dev script..."
-  sed -i.bak 's/"scripts": {/"scripts": {\n    "dev": "nodemon server.js",/' package.json
+  sed -i.bak 's/"scripts": {/"scripts": {\n    "dev": "nodemon --quiet server.js",/' package.json
   rm package.json.bak  # Clean up backup if not needed
 fi
 
