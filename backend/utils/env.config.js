@@ -20,7 +20,7 @@ const expressConfig = {
 const llmConfig = {
     PORT: LLM_PORT ?? 11434,
     HOSTNAME: LLM_HOST ?? 'localhost',
-    COMBINED: `${LLM_HOST ?? 'localhost'}:${LLM_PORT ?? 11434}`
+    get url() { return `http://${this.host}:${this.port}`; }
 }
 
 const getLogLevel = () => {
@@ -56,5 +56,6 @@ module.exports = {
         repo,
         nodeVersion: process.version,
         platform: `${os.platform()} (${os.arch()})`
-    }
+    },
+    serverUptime: new Date(),
 }

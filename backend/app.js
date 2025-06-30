@@ -4,9 +4,9 @@ const helmet = require('helmet');
 const cors = require('cors');
 
 const { logMiddleware } = require('./utils/logger');
-const { printResMid } = require('./utils/middleware');
+const { printResMid, apiLimiterMid } = require('./utils/middleware');
 
-const metaRoutes = require('./routes/meta');
+const v1Routes = require('./routes/v1');
 
 const app = express();
 app.use(express.json());
@@ -17,7 +17,8 @@ app.use(helmet());
 app.use(cors());
 app.use(logMiddleware);
 app.use(printResMid);
+app.use(apiLimiterMid);
 
-app.use('/meta', metaRoutes);
+app.use('/v1', v1Routes);
 
 module.exports = app;

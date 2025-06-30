@@ -1,4 +1,5 @@
 const { Logger } = require('./logger');
+const rateLimit = require('express-rate-limit');
 
 const printResMid = (req, res, next) => {
     const { method, url, body, query } = req;
@@ -13,6 +14,15 @@ const printResMid = (req, res, next) => {
     next();
 };
 
+const apiLimiterMid = rateLimit({
+    windowMs: 1 * 60 * 1000,
+    max: 100,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many requests, please try again later.' }
+});
+
 module.exports = {
-    printResMid
+    printResMid,
+    apiLimiterMid,
 };

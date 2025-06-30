@@ -28,7 +28,7 @@ fi
 echo "🔄 Initializing backend npm project..."
 cd backend
 npm init -y
-npm install express axios sqlite3 dotenv cors helmet compression morgan module-alias winston
+npm install express axios sqlite3 dotenv cors helmet compression morgan module-alias winston bcrypt express-rate-limit
 npm install --save-dev nodemon
 
 echo "🛠️ Adding nodemon dev script to package.json..."

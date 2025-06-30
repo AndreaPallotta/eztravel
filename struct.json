@@ -17,7 +17,7 @@
     ".gitkeep": null
   },
   "data": {
-    "cache.sqlite": null
+    "db.sqlite": null
   },
   "ml": {
     ".gitkeep": null
