@@ -10,7 +10,7 @@ const { select } = require('../../utils/db');
 const getVersion = async (_, res) => {
     let llm;
     try {
-        const response = await axios.get(`${llmConfig.url()}/api/show?name=mistral`, { timeout: 1000 });
+        const response = await axios.get(`${llmConfig.url}/api/show?name=mistral`, { timeout: 1000 });
         llm = {
             model: response.data?.name ?? 'Unknown',
             status: 'loaded',
@@ -33,7 +33,7 @@ const getHealth = async (_, res) => {
     let llmStatus = true;
     const errors = {};
     try {
-        const llmRes = await axios.get(`http://${llmConfig.url()}/api/tags`, { timeout: 1000 });
+        const llmRes = await axios.get(`http://${llmConfig.url}/api/tags`, { timeout: 1000 });
         llmStatus = llmRes.status === 200;
     } catch (err) {
         Logger.error(`Failed to retrieve llm health status: ${err.message}`);
@@ -106,7 +106,7 @@ const getUptime = async (_, res) => {
     let statusCode = 200;
 
     try {
-        const llmRes = await axios.get(`${llmConfig.url()}/api/ps`, { timeout: 1000 });
+        const llmRes = await axios.get(`${llmConfig.url}/api/ps`, { timeout: 1000 });
         const mistral = llmRes.data.models?.find((m) => m.name.includes('mistral'));
         if (!mistral || !mistral.created_at) {
             throw new Error('Model not running');

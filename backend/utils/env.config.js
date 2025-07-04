@@ -2,9 +2,8 @@ require('dotenv').config({ path: '.env' });
 const { execSync } = require('child_process');
 const os = require('os');
 const pkg = require('../package.json');
-const { Logger } = require('./logger');
 
-const { NODE_ENV, PORT, HOST, LLM_PORT, LLM_HOST, LOG_LEVEL, CACHE_TIME, LOG_DIR_NAME } = process.env;
+const { NODE_ENV, PORT, HOSTNAME, LLM_PORT, LLM_HOSTNAME, LOG_LEVEL, CACHE_TIME, LOG_DIR_NAME } = process.env;
 const env = NODE_ENV || 'development';
 
 const isDev = env === 'development';
@@ -14,13 +13,14 @@ const logLevels = ['error', 'warn', 'info', 'http', 'debug'];
 
 const expressConfig = {
     PORT: PORT ?? 3000,
-    HOSTNAME: HOST ?? 'localhost',
+    HOSTNAME: HOSTNAME ?? 'localhost',
+    get url() { return `http://${this.HOSTNAME}:${this.PORT}`; }
 };
 
 const llmConfig = {
     PORT: LLM_PORT ?? 11434,
-    HOSTNAME: LLM_HOST ?? 'localhost',
-    get url() { return `http://${this.host}:${this.port}`; }
+    HOSTNAME: LLM_HOSTNAME ?? 'localhost',
+    get url() { return `http://${this.HOSTNAME}:${this.PORT}`; }
 }
 
 const getLogLevel = () => {
@@ -33,11 +33,21 @@ const getLogLevel = () => {
 let commit = 'Unknown'
 try {
     commit = execSync('git rev-parse --short HEAD').toString().trim();
-} catch (e) {
-    Logger.warn('Could not get git commit: ', e.message);
-}
-
+} catch {}
 const repo = (pkg.repository?.url ?? 'N/A').replace(`${pkg.repository?.type ?? 'git'}+`, '');
+
+const swaggerOpts = {
+    definition: {
+        openapi: '3.1.0',
+        info: {
+            title: 'EzTravel API Docs',
+            version: pkg.version ?? '0.0.1',
+            description: 'CRUD Express API for EzTravel'
+        },
+        servers: [{ url: expressConfig.url }],
+    },
+    apis: ['./routes/v1/*.js']
+}
 
 module.exports = {
     isDev,
@@ -58,4 +68,5 @@ module.exports = {
         platform: `${os.platform()} (${os.arch()})`
     },
     serverUptime: new Date(),
+    swaggerOpts
 }

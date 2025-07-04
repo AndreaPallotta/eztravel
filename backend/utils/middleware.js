@@ -3,7 +3,7 @@ const rateLimit = require('express-rate-limit');
 
 const printResMid = (req, res, next) => {
     const { method, url, body, query } = req;
-    Logger.debug(`📥 ${method} ${url} - Query: ${JSON.stringify(query)} Body: ${JSON.stringify(body)}`);
+    Logger.debug(`📥 ${method} ${url} - Query: ${JSON.stringify(query)} - Body: ${JSON.stringify(body)}`);
     const start = Date.now();
 
     res.on('finish', () => {
