@@ -1,4 +1,5 @@
 import streamlit as st
+from utils.api import api_post
 from utils.session import get_user
 from utils.utils import general_setup, new_session_var
 
@@ -8,7 +9,7 @@ st.title("✈️ Plan a New Itinerary")
 tabs = st.tabs(["Form-based Builder", "Free-text Query"])
 
 user = get_user()
-user_id = user["id"] if user else None
+user_id = user.get("id") if user else None
 
 new_session_var("has_dest", False)
 new_session_var("destination", "")
@@ -31,6 +32,7 @@ with tabs[0]:
             key="destination",
             placeholder="e.g. United States, Arizona",
         )
+
     st.text_input(
         "Your current location", key="curr_location", placeholder="e.g. New York City"
     )
@@ -58,17 +60,25 @@ with tabs[0]:
     )
 
     if st.button("Generate"):
-        st.info("🚧 This endpoint is not yet implemented.")
-        st.json(
-            {
-                "location": st.session_state.destination,
-                "days": st.session_state.days,
-                "weather": st.session_state.weather,
-                "activities": st.session_state.activities,
-                "user_id": user_id,
-                "has_location": st.session_state.has_dest,
-            }
+        payload = {
+            "userId": user_id,
+            "hasDest": st.session_state.has_dest,
+            "destination": st.session_state.destination,
+            "days": st.session_state.days,
+            "weather": st.session_state.weather,
+            "activities": st.session_state.activities,
+            "costRange": st.session_state.cost_range,
+            "currLocation": st.session_state.curr_location,
+        }
+        response = api_post(
+            "/itineraries", body=payload, loading_text="Generating itinerary..."
         )
+        if response["error"]:
+            st.error(response["error"])
+        else:
+            result = response["data"]
+            st.success("Itinerary generated!")
+            st.json(result)
 
 with tabs[1]:
     st.subheader("💬 Free-text Itinerary Query")
@@ -78,5 +88,4 @@ with tabs[1]:
     )
     if st.button("Submit Query"):
         st.info("🚧 Not implemented yet - will connect to /itineraries/query later")
-        # TODO: Update with actual query
         st.write(f"Query submitted: {prompt}")

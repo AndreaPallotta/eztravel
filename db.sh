@@ -17,10 +17,10 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS itineraries (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL,
-  title TEXT,
-  location TEXT,
-  days INTEGER,
-  data TEXT,
+  title TEXT NOT NULL,
+  location TEXT NOT NULL,
+  days INTEGER NOT NULL,
+  data TEXT NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY(user_id) REFERENCES users(id)
 );
@@ -28,8 +28,8 @@ CREATE TABLE IF NOT EXISTS itineraries (
 CREATE TABLE IF NOT EXISTS cache (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL,
-  prompt TEXT,
-  response TEXT,
+  prompt TEXT NOT NULL,
+  response TEXT NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   UNIQUE(user_id, prompt),
   FOREIGN KEY(user_id) REFERENCES users(id)

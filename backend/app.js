@@ -5,7 +5,7 @@ const cors = require('cors');
 const swaggerUi = require('swagger-ui-express');
 const swaggerJsDoc = require('swagger-jsdoc');
 
-const { logMiddleware } = require('./utils/logger');
+const { logMiddleware, Logger } = require('./utils/logger');
 const { printResMid, apiLimiterMid } = require('./utils/middleware');
 
 const v1Routes = require('./routes/v1');
@@ -25,7 +25,7 @@ app.use(apiLimiterMid);
 app.use('/v1', v1Routes);
 app.use('/api', swaggerUi.serve, swaggerUi.setup(swaggerJsDoc(swaggerOpts)));
 app.use((req, res, _) => {
-    console.log(req.originalUrl);
+    Logger.warn(`"${req.originalUrl}" is not a valid endpoint`);
     return res.status(404).send({ error: `"${req.originalUrl}" is not a valid endpoint` });
 });
 

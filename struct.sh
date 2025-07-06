@@ -7,11 +7,7 @@ STRUCTURE_FILE="struct.json"
 create_structure() {
   local path="$1"
   local json="$2"
-
-  # If it's an object, it's a folder
   mkdir -p "$path"
-
-  # Loop through keys
   for key in $(echo "$json" | jq -r 'keys[]'); do
     value=$(echo "$json" | jq ".\"$key\"")
 

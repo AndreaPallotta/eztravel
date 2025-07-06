@@ -11,7 +11,7 @@ def status_chip(is_ok):
 
 
 st.subheader("✅ Health Status")
-health = api_get("meta/health")
+health = api_get("meta/health", loading_text="Retrieving health metrics...")
 
 if health["error"]:
     st.error(health["error"])
@@ -31,7 +31,7 @@ else:
 st.divider()
 st.subheader("⏱️ Uptime")
 
-uptime = api_get("meta/uptime")
+uptime = api_get("meta/uptime", loading_text="Retrieving uptime metrics...")
 if uptime["error"]:
     st.error(uptime["error"])
 else:
@@ -45,7 +45,7 @@ else:
 st.divider()
 st.subheader("🧠 Version Information")
 
-version = api_get("meta/version")
+version = api_get("meta/version", loading_text="Retrieving version information...")
 if version["error"]:
     st.error(version["error"])
 else:
@@ -66,7 +66,7 @@ else:
 st.divider()
 st.subheader("🧠 Cache Insights")
 
-cache = api_get("meta/cache")
+cache = api_get("meta/cache", loading_text="Retrieving cache metrics...")
 if cache["error"]:
     st.error(cache["error"])
 else:

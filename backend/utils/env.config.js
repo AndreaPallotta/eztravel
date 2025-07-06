@@ -1,27 +1,47 @@
-require('dotenv').config({ path: '.env' });
+const path = require('path');
 const { execSync } = require('child_process');
 const os = require('os');
+const dotenv = require('dotenv');
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
+
 const pkg = require('../package.json');
 
-const { NODE_ENV, PORT, HOSTNAME, LLM_PORT, LLM_HOSTNAME, LOG_LEVEL, CACHE_TIME, LOG_DIR_NAME } = process.env;
-const env = NODE_ENV || 'development';
+const {
+    NODE_ENV,
+    PORT,
+    HOSTNAME,
+    LLM_PORT,
+    LLM_HOSTNAME,
+    LOG_LEVEL,
+    CACHE_TIME,
+    LOG_DIR_NAME,
+    RATE_LIMIT_WINDOW_MS,
+    RATE_LIMIT_MAX,
+} = process.env;
 
+const env = NODE_ENV || 'development';
 const isDev = env === 'development';
 const isTest = env === 'test';
 const isProd = env === 'production';
 const logLevels = ['error', 'warn', 'info', 'http', 'debug'];
 
 const expressConfig = {
-    PORT: PORT ?? 3000,
+    PORT: Number(PORT ?? 3000),
     HOSTNAME: HOSTNAME ?? 'localhost',
-    get url() { return `http://${this.HOSTNAME}:${this.PORT}`; }
+    RATE_LIMIT_WINDOW_MS: parseInt(RATE_LIMIT_WINDOW_MS, 10) || 60000,
+    RATE_LIMIT_MAX: parseInt(RATE_LIMIT_MAX, 10) || 100,
+    get url() {
+        return `http://${this.HOSTNAME}:${this.PORT}`;
+    },
 };
 
 const llmConfig = {
-    PORT: LLM_PORT ?? 11434,
+    PORT: Number(LLM_PORT ?? 11434),
     HOSTNAME: LLM_HOSTNAME ?? 'localhost',
-    get url() { return `http://${this.HOSTNAME}:${this.PORT}`; }
-}
+    get url() {
+        return `http://${this.HOSTNAME}:${this.PORT}`;
+    },
+};
 
 const getLogLevel = () => {
     if (!LOG_LEVEL || !logLevels.includes(LOG_LEVEL)) {
@@ -30,11 +50,15 @@ const getLogLevel = () => {
     return LOG_LEVEL;
 };
 
-let commit = 'Unknown'
+let commit = 'Unknown';
 try {
     commit = execSync('git rev-parse --short HEAD').toString().trim();
 } catch {}
-const repo = (pkg.repository?.url ?? 'N/A').replace(`${pkg.repository?.type ?? 'git'}+`, '');
+
+const repo =
+    typeof pkg.repository?.url === 'string'
+        ? pkg.repository.url.replace(`${pkg.repository?.type ?? 'git'}+`, '')
+        : 'N/A';
 
 const swaggerOpts = {
     definition: {
@@ -42,12 +66,12 @@ const swaggerOpts = {
         info: {
             title: 'EzTravel API Docs',
             version: pkg.version ?? '0.0.1',
-            description: 'CRUD Express API for EzTravel'
+            description: 'CRUD Express API for EzTravel',
         },
         servers: [{ url: expressConfig.url }],
     },
-    apis: ['./routes/v1/*.js']
-}
+    apis: ['./routes/v1/*.js'],
+};
 
 module.exports = {
     isDev,
@@ -65,8 +89,8 @@ module.exports = {
         commit,
         repo,
         nodeVersion: process.version,
-        platform: `${os.platform()} (${os.arch()})`
+        platform: `${os.platform()} (${os.arch()})`,
     },
     serverUptime: new Date(),
-    swaggerOpts
-}
+    swaggerOpts,
+};

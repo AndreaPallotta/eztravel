@@ -23,12 +23,12 @@ winston.addColors(colors);
 const consoleFormat = winston.format.combine(
     winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss:ms' }),
     winston.format.colorize({ all: true }),
-    winston.format.printf(info => `${info.timestamp} - ${info.level}: ${info.message}`)
+    winston.format.printf((info) => `${info.timestamp} - ${info.level}: ${info.message}`)
 );
 
 const fileFormat = winston.format.combine(
     winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss:ms' }),
-    winston.format.printf(info => `${info.timestamp} - ${info.level}: ${info.message}`)
+    winston.format.printf((info) => `${info.timestamp} - ${info.level}: ${info.message}`)
 );
 
 const transports = [
@@ -37,18 +37,18 @@ const transports = [
         filename: `${log_dir_name}/error.log`,
         level: 'error',
         format: fileFormat,
-        options: { flags: 'w' },
+        options: { flags: 'a' },
     }),
     new winston.transports.File({
         filename: `${log_dir_name}/http.log`,
         level: 'http',
         format: fileFormat,
-        options: { flags: 'w' },
+        options: { flags: 'a' },
     }),
     new winston.transports.File({
         filename: `${log_dir_name}/all.log`,
         format: fileFormat,
-        options: { flags: 'w' },
+        options: { flags: 'a' },
     }),
 ];
 
@@ -58,19 +58,18 @@ const Logger = winston.createLogger({
     transports,
 });
 
-// Morgan integration
 const stream = {
-    write: message => Logger.http(message.trim()),
+    write: (message) => Logger.http(message.trim()),
 };
 
 const skip = (_, res) => {
     return isDev ? false : res.statusCode < 400;
 };
 
-const logMiddleware = morgan(
-    ':method :url :status :res[content-length] - :response-time ms',
-    { stream, skip }
-);
+const logMiddleware = morgan(':method :url :status :res[content-length] - :response-time ms', {
+    stream,
+    skip,
+});
 
 module.exports = {
     Logger,

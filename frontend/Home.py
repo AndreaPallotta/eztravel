@@ -2,7 +2,7 @@ import streamlit as st
 from utils.api import api_get
 from utils.env import ENV_CONFIGS
 from utils.session import init_session
-from utils.utils import general_setup
+from utils.utils import general_setup, toast_notif
 
 general_setup(title="Home")
 init_session()
@@ -22,7 +22,7 @@ Use the sidebar to:
 st.markdown("---")
 
 st.markdown("#### System Status")
-res_status = api_get(endpoint="/meta/health")
+res_status = api_get(endpoint="/meta/health", loading_text="Checking system status...")
 
 if res_status["error"]:
     st.error(res_status["error"])
@@ -37,8 +37,9 @@ else:
                 else:
                     st.warning(f"⚠️ {component.upper()}: Degraded")
                     if ENV_CONFIGS["DEBUG"]:
-                        st.error(
-                            f"{component.upper()} - {res_status['data'].get('errors', {}).get(component, '')}"
+                        toast_notif(
+                            f"{component.upper()} - {res_status['data'].get('errors', {}).get(component, '')}",
+                            "error",
                         )
 
 st.markdown("---")

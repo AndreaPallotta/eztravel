@@ -27,18 +27,20 @@ const _isSafeInput = (input) => {
 
 const getLlmInfo = async () => {
     try {
-        const response = await axios.get(`${llmConfig.url}/api/show?name=mistral`, { timeout: 1000 });
+        const response = await axios.get(`${llmConfig.url}/api/show?name=mistral`, {
+            timeout: 1000,
+        });
         return {
             model: response.data?.name ?? 'Unknown',
             status: 'loaded',
-            details: response.data?.details ?? {}
+            details: response.data?.details ?? {},
         };
     } catch (err) {
         Logger.error(`Failed to retrieve llm info: ${err.message}`);
         return {
             model: 'mistral',
             status: 'unavailable',
-            error: err.message
+            error: err.message,
         };
     }
 };
@@ -85,8 +87,8 @@ const getItineraryPromptResponse = async (prompt) => {
         const { data } = await axios.post(`${llmConfig.url}/api/generate`, {
             messages: [
                 { role: 'system', content: _SYSTEM_PROMPT },
-                { role: 'user', content: prompt }
-            ]
+                { role: 'user', content: prompt },
+            ],
         });
         return { promptRes: data, resErrors: null };
     } catch (err) {
@@ -100,5 +102,5 @@ module.exports = {
     getLlmInfo,
     getLlmTags,
     getLlmUptime,
-    getItineraryPromptResponse
+    getItineraryPromptResponse,
 };

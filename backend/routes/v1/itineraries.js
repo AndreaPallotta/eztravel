@@ -2,11 +2,10 @@ const router = require('express').Router();
 const { select, insert, dbDelete } = require('../../utils/db');
 const { getItineraryPromptResponse } = require('../../utils/llm');
 const { Logger } = require('../../utils/logger');
+const { validateMid } = require('../../utils/middleware');
 
 const getItineraries = async (req, res) => {
     const userId = req.query.userId;
-    if (!userId) return res.status(400).json({ error: 'Missing userId' });
-
     try {
         const itineraries = await select.getItinerariesByUserId(userId);
         res.status(200).json(itineraries);
@@ -14,11 +13,10 @@ const getItineraries = async (req, res) => {
         Logger.error(`Failed to get itineraries for user ${userId}: ${err.message}`);
         res.status(500).json({ error: 'Failed to get itineraries' });
     }
-}
+};
 
 const getItineraryById = async (req, res) => {
     const { id } = req.params;
-
     try {
         const itinerary = await select.getItineraryById(id);
         if (!itinerary) return res.status(404).json({ error: 'Itinerary not found' });
@@ -30,59 +28,52 @@ const getItineraryById = async (req, res) => {
 };
 
 const createItinerary = async (req, res) => {
-    const {
-        userId,
-        hasDest,
-        destination,
-        days,
-        weather,
-        activities,
-        costRange,
-        currLocation,
-    } = req.body;
-
-    if (!userId || !days || !Array.isArray(activities)) {
-        return res.status(400).json({ error: 'Missing fields' });
-    }
+    const { userId, hasDest, destination, days, weather, activities, costRange, currLocation } =
+        req.body;
 
     try {
         let finalDestination = destination;
         let itineraryTitle = '';
         let itineraryData = null;
+        let prompt = '';
 
         if (!hasDest || !destination) {
-            const prompt = `Plan a ${days}-day trip for a solo traveler starting from "${currLocation}". They enjoy ${activities.join(", ")}, prefer ${weather || "any"} weather, and have a budget between $${costRange?.[0] || 500} and $${costRange?.[1] || 1500}. Suggest a good destination and build a full itinerary.`;
-
+            prompt = `Plan a ${days}-day trip for a solo traveler starting from "${currLocation}". They enjoy ${activities.join(', ')}, prefer ${weather || 'any'} weather, and have a budget between $${costRange?.[0] || 500} and $${costRange?.[1] || 1500}. Suggest a good destination and build a full itinerary.`;
             const llmResponse = await getItineraryPromptResponse(prompt);
 
-            finalDestination = llmResponse.destination || 'Unknown';
+            finalDestination = llmResponse.promptRes?.destination || 'Unknown';
             itineraryTitle = `${finalDestination} Trip`;
-            itineraryData = llmResponse.itinerary || {};
+            itineraryData = llmResponse.promptRes?.itinerary || {};
         } else {
             itineraryTitle = `${destination} Trip`;
-            const prompt = `Build a ${days}-day itinerary for a solo traveler to ${destination}. Interests: ${activities.join(", ")}. Budget: $${costRange?.[0]}–${costRange?.[1]}. Weather preference: ${weather || "any"}.`;
+            prompt = `Build a ${days}-day itinerary for a solo traveler to ${destination}. Interests: ${activities.join(', ')}. Budget: $${costRange?.[0]}–${costRange?.[1]}. Weather preference: ${weather || 'any'}.`;
             const llmResponse = await getItineraryPromptResponse(prompt);
-            itineraryData = llmResponse.itinerary || {};
+
+            itineraryData = llmResponse.promptRes?.itinerary || {};
         }
 
-        // const inserted = await insert.insertItineraryByUserId(
-        //     userId,
-        //     itineraryTitle,
-        //     finalDestination,
-        //     days,
-        //     itineraryData
-        // );
+        const insertedId = await insert.insertItinerary(
+            userId,
+            itineraryTitle,
+            finalDestination,
+            days,
+            itineraryData
+        );
 
-        res.status(201).json({ result: itineraryData, title: itineraryTitle, destination: finalDestination });
+        res.status(201).json({
+            id: insertedId,
+            title: itineraryTitle,
+            destination: finalDestination,
+            result: itineraryData,
+        });
     } catch (err) {
         Logger.error(`Failed to create itinerary: ${err.message}`);
-        res.status(500).json({ 'error': `Failed to create itinerary: ${err.message}`});
+        res.status(500).json({ error: `Failed to create itinerary: ${err.message}` });
     }
 };
 
 const deleteItineraryById = async (req, res) => {
     const { id } = req.params;
-
     try {
         const result = await dbDelete.deleteItinerary(id);
         if (!result) return res.status(404).json({ error: 'Itinerary not found' });
@@ -93,9 +84,33 @@ const deleteItineraryById = async (req, res) => {
     }
 };
 
-router.get('/', getItineraries);
-router.get('/:id', getItineraryById);
-router.post('/', createItinerary);
-router.delete('/:id', deleteItineraryById);
+const validateGetItineraries = [
+    query('userId').notEmpty().withMessage('userId is required'),
+    validateMid,
+];
+
+const validateGetItineraryById = [
+    param('id').isInt().withMessage('Valid itinerary id is required'),
+    validateMid,
+];
+
+const validateCreateItinerary = [
+    body('userId').isInt(),
+    body('hasDest').isBoolean(),
+    body('destination').isString(),
+    body('days').isInt({ min: 1 }),
+    body('weather').optional().isString(),
+    body('activities').isArray(),
+    body('costRange').isArray({ min: 2, max: 2 }),
+    body('currLocation').isString(),
+    validateMid,
+];
+
+const validateDeleteItinerary = [param('id').isInt(), validateMid];
+
+router.get('/', validateGetItineraries, getItineraries);
+router.get('/:id', validateGetItineraryById, getItineraryById);
+router.post('/', validateCreateItinerary, createItinerary);
+router.delete('/:id', validateDeleteItinerary, deleteItineraryById);
 
 module.exports = router;

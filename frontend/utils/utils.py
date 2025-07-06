@@ -33,3 +33,12 @@ def general_setup(title, full_width=False, auth_required=False):
 def new_session_var(key, value):
     if key not in st.session_state:
         st.session_state[key] = value
+
+
+def toast_notif(message, type="info"):
+    st.toast(
+        message,
+        icon={"success": "✅", "error": "❌", "warning": "⚠️", "info": "ℹ️"}.get(
+            type, "ℹ️"
+        ),
+    )

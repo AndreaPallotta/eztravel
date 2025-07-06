@@ -1,11 +1,36 @@
 #!/usr/bin/env bash
 
 set -e
-bash ./struct.sh
 
-echo "📦 Writing Conda environment file..."
-cat <<EOF > frontend/environment.yml
-name: travel-planner
+STRUCTURE_FILE="struct.json"
+ENV_NAME="travel-planner"
+DB_FILE="./data/db.sqlite"
+CONDA_ENV_FILE="frontend/environment.yml"
+
+create_project_structure() {
+  echo "📁 Creating folders and files from struct.json..."
+  local path="$1"
+  local json="$2"
+  mkdir -p "$path"
+
+  for key in $(echo "$json" | jq -r 'keys[]'); do
+    local value=$(echo "$json" | jq ".\"$key\"")
+    if echo "$value" | jq -e 'type == "object"' > /dev/null; then
+      create_project_structure "$path/$key" "$value"
+    else
+      touch "$path/$key"
+    fi
+  done
+}
+
+setup_conda_env() {
+  echo "🔍 Checking for existing Conda environment..."
+  if conda info --envs | grep -q "$ENV_NAME"; then
+    echo "✅ Conda environment '$ENV_NAME' already exists."
+  else
+    echo "📦 Writing Conda environment file..."
+    cat <<EOF > $CONDA_ENV_FILE
+name: $ENV_NAME
 channels:
   - conda-forge
 dependencies:
@@ -17,59 +42,95 @@ dependencies:
   - openpyxl
 EOF
 
-echo "🔍 Checking for existing Conda environment..."
-if conda info --envs | grep -q "travel-planner"; then
-  echo "✅ Conda environment 'travel-planner' already exists."
-else
-  echo "🛠️ Creating Conda environment 'travel-planner'..."
-  conda env create -f frontend/environment.yml
-fi
-
-echo "🔄 Initializing backend npm project..."
-cd backend
-npm init -y
-npm install express axios sqlite3 dotenv cors helmet compression morgan module-alias winston bcrypt express-rate-limit
-npm install --save-dev nodemon
-
-echo "🛠️ Adding nodemon dev script to package.json..."
-if command -v npx &> /dev/null; then
-  npx json -I -f package.json -e 'this.scripts.dev="nodemon --quiet server.js"'
-else
-  echo "⚠️ 'npx' not found. Using sed to add dev script..."
-  sed -i.bak 's/"scripts": {/"scripts": {\n    "dev": "nodemon --quiet server.js",/' package.json
-  rm package.json.bak  # Clean up backup if not needed
-fi
-
-cd ..
-
-echo "🔍 Checking for Ollama..."
-if ! command -v ollama &> /dev/null; then
-  echo "❌ Ollama not found."
-
-  echo "📦 Installing Ollama via apt..."
-  if ! command -v apt &> /dev/null; then
-    echo "🚫 'apt' not available. Cannot install Ollama automatically."
-    echo "Please install Ollama manually: https://ollama.com/download"
-    exit 1
+    echo "🛠️ Creating Conda environment '$ENV_NAME'..."
+    conda env create -f $CONDA_ENV_FILE
   fi
+}
 
-  curl -fsSL https://ollama.com/install.sh | sh
-else
-  echo "✅ Ollama is installed."
-fi
 
-echo "🔍 Checking for 'mistral' model..."
-if ! ollama list | grep -q "mistral"; then
-  echo "⬇️ Pulling mistral model..."
-  ollama pull mistral
-else
-  echo "✅ Mistral model is available."
-fi
+init_backend() {
+  echo "🔄 Initializing backend npm project..."
+  cd backend
+  npm init -y
+  npm install \
+    express \
+    axios \
+    sqlite3 \
+    dotenv \
+    cors \
+    helmet \
+    compression \
+    morgan \
+    module-alias \
+    winston \
+    bcrypt \
+    express-rate-limit \
+    express-validator \
+    swagger-jsdoc \
+    swagger-ui-express
 
-echo "✅ Full setup complete!"
-echo
-echo "👉 Next steps:"
-echo "   1. Run: conda activate travel-planner"
-echo "   2. Run: npm run dev (inside ./backend)"
-echo "   3. Run: streamlit run frontend/app.py"
+  npm install --save-dev \
+    nodemon \
+    prettier
 
+  echo "🛠️ Adding scripts to package.json..."
+  if command -v npx &> /dev/null; then
+    npx json -I -f package.json -e '
+      this.scripts = {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "start": "node server.js",
+        "dev": "nodemon --quiet server.js",
+        "format": "prettier --write \"**/*.{js,json,md}\""
+      }'
+  else
+    echo "⚠️ 'npx' not found. Using sed to add dev script..."
+    sed -i.bak 's/"scripts": {/&\n    "start": "node server.js",\n    "dev": "nodemon --quiet server.js",\n    "format": "prettier --write \"**\/*.{js,json,md}\""/' package.json
+    rm package.json.bak
+  fi
+  cd ..
+}
+
+check_or_install_ollama() {
+  echo "🔍 Checking for Ollama..."
+  if ! command -v ollama &> /dev/null; then
+    echo "❌ Ollama not found."
+    echo "📦 Installing Ollama via apt..."
+    if ! command -v apt &> /dev/null; then
+      echo "🚫 'apt' not available. Cannot install Ollama automatically."
+      echo "Please install Ollama manually: https://ollama.com/download"
+      exit 1
+    fi
+    curl -fsSL https://ollama.com/install.sh | sh
+  else
+    echo "✅ Ollama is installed."
+  fi
+}
+
+pull_mistral_model() {
+  echo "🔍 Checking for 'mistral' model..."
+  if ! ollama list | grep -q "mistral"; then
+    echo "⬇️ Pulling mistral model..."
+    ollama pull mistral
+  else
+    echo "✅ Mistral model is available."
+  fi
+}
+
+# === MAIN SETUP ENTRY POINT ===
+main() {
+  ROOT_JSON=$(cat "$STRUCTURE_FILE")
+  create_project_structure "." "$ROOT_JSON"
+  setup_conda_env
+  init_backend
+  check_or_install_ollama
+  pull_mistral_model
+
+  echo "✅ Full setup complete!"
+  echo
+  echo "👉 Next steps:"
+  echo "   1. Run: conda activate $ENV_NAME"
+  echo "   2. Run: npm run dev (inside ./backend)"
+  echo "   3. Run: streamlit run frontend/app.py"
+}
+
+main
