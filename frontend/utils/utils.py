@@ -1,4 +1,5 @@
 import streamlit as st
+
 from utils.session import get_user, is_authenticated, logout
 
 
@@ -27,3 +28,8 @@ def general_setup(title, full_width=False, auth_required=False):
     if auth_required and not is_authenticated():
         st.warning("You must be logged in to access this page")
         st.stop()
+
+
+def new_session_var(key, value):
+    if key not in st.session_state:
+        st.session_state[key] = value

@@ -3,7 +3,7 @@ const { select, insert } = require('../../utils/db');
 const { Logger } = require('../../utils/logger');
 const bcrypt = require('bcrypt');
 
-router.post('/signup', async (req, res) => {
+const signUp = async (req, res) => {
     const { email, password, first_name, last_name } = req.body;
     if (!email || !password || !first_name || !last_name) {
         return res.status(400).json({ error: 'Missing required fields' });
@@ -22,9 +22,9 @@ router.post('/signup', async (req, res) => {
         Logger.error(`Signup failed: ${err.message}`);
         res.status(500).json({ error: 'Signup failed' });
     }
-});
+};
 
-router.post('/signin', async (req, res) => {
+const signIn = async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password) {
         return res.status(400).json({ error: 'Missing email or password' });
@@ -48,6 +48,9 @@ router.post('/signin', async (req, res) => {
         Logger.error(`Signin failed: ${err.message}`);
         res.status(500).json({ error: 'Signin failed' });
     }
-});
+}
+
+router.post('/signup', signUp);
+router.post('/signin', signIn);
 
 module.exports = router;

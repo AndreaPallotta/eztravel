@@ -1,28 +1,14 @@
 const fs = require('fs');
 const path = require('path');
 const router = require('express').Router()
-const axios = require('axios');
-const { versionInfo, log_dir_name, llmConfig, serverUptime } = require('../../utils/env.config');
+const { versionInfo, log_dir_name, serverUptime } = require('../../utils/env.config');
 const { Logger } = require('../../utils/logger');
 const { select } = require('../../utils/db');
+const { getLlmInfo, getLlmTags, getLlmUptime } = require('../../utils/llm');
 
 
 const getVersion = async (_, res) => {
-    let llm;
-    try {
-        const response = await axios.get(`${llmConfig.url}/api/show?name=mistral`, { timeout: 1000 });
-        llm = {
-            model: response.data?.name ?? 'Unknown',
-            status: 'loaded',
-            details: response.data?.details ?? {}
-        };
-    } catch (err) {
-        llm = {
-            model: 'mistral',
-            status: 'unavailable',
-            error: err.message
-        }
-    }
+    const llm = await getLlmInfo();
     return res.status(200).send({
         ...versionInfo,
         llm
@@ -30,15 +16,10 @@ const getVersion = async (_, res) => {
 };
 
 const getHealth = async (_, res) => {
-    let llmStatus = true;
     const errors = {};
-    try {
-        const llmRes = await axios.get(`http://${llmConfig.url}/api/tags`, { timeout: 1000 });
-        llmStatus = llmRes.status === 200;
-    } catch (err) {
-        Logger.error(`Failed to retrieve llm health status: ${err.message}`);
-        llmStatus = false;
-        errors.llm = err.message;
+    const { llmStatus, llmErrors } = await getLlmTags();
+    if (llmErrors) {
+        errors.llm = llmErrors;
     }
 
     let dbStatus = true;
@@ -100,30 +81,17 @@ const getUptime = async (_, res) => {
 
     const uptimeSecs = Math.floor((now - serverUptime) / 1000);
     const serverUptimeStr = `${Math.floor(uptimeSecs / 3600)}h ${Math.floor((uptimeSecs % 3600) / 60)}m ${uptimeSecs % 60}s`;
-
-    let llmUptimeStr = 'unknown';
-    let llmErrors = '';
     let statusCode = 200;
 
-    try {
-        const llmRes = await axios.get(`${llmConfig.url}/api/ps`, { timeout: 1000 });
-        const mistral = llmRes.data.models?.find((m) => m.name.includes('mistral'));
-        if (!mistral || !mistral.created_at) {
-            throw new Error('Model not running');
-        }
-        const start = new Date(mistral.created_at);
-        const llmUptimeSecs = Math.floor((now - start) / 1000);
-        llmUptimeStr = `${Math.floor(llmUptimeSecs / 3600)}h ${Math.floor((llmUptimeSecs % 3600) / 60)}m ${llmUptimeSecs % 60}s`;
-    } catch (e) {
-        llmErrors = `Failed to retrieve LLM uptime: ${e.message}`;
-        Logger.error(llmErrors);
-        statusCode = 503;
+    const { llmUptime, llmUptimeErrors } = await getLlmUptime();
+    if (llmUptimeErrors) {
+        statusCode = 500;
     }
 
     return res.status(statusCode).json({
         server_uptime: serverUptimeStr,
-        llm_uptime: llmUptimeStr,
-        llm_errors: llmErrors || undefined,
+        llm_uptime: llmUptime,
+        llm_errors: llmUptimeErrors || undefined,
         timestamp: now.toISOString()
     });
 };
